@@ -12,6 +12,7 @@
 #include <time.h>
 #include <errno.h>
 #include <wiringPi.h>
+#include <sys/time.h>
 
 #include "leptonSDKEmb32PUB/LEPTON_SDK.h"
 #include "leptonSDKEmb32PUB/LEPTON_SYS.h"
@@ -133,7 +134,7 @@ static void save_pgm_file(int image_index)
         exit(1);
     }
 
-    printf("Calculating min/max values for proper scaling...\n");
+    //printf("Calculating min/max values for proper scaling...\n");
     for(i = 0; i < 240; i++)
     {
         
@@ -239,8 +240,8 @@ static int get_frame(int fd)
         {
             pixel = packet_number + ((current_segment - 1) * 60);
             lepton_image[pixel][(i - 4) / 2] = (rx_buf[packet + i] << 8 | rx_buf[packet + (i + 1)]);
-	    if(lepton_image[pixel][(i-4)/2 ] == 0)
-		printf("Zero\r\n");
+	   // if(lepton_image[pixel][(i-4)/2 ] == 0)
+ 		//printf("Zero\r\n");
         }
 
         if(packet_number == 59)
@@ -397,7 +398,7 @@ int main(int argc, char *argv[])
         }
     }
  	
-    printf("start\r\n");
+   // printf("start\r\n");
 
     sleep(startup_delay);
 
@@ -460,7 +461,12 @@ int main(int argc, char *argv[])
 		perror("Unable to setup wiringPi\n");
     else if (wiringPiISR(GPIO_PIN, INT_EDGE_BOTH, &vsync_isr) < 0)
 		perror("Unable to set ISR\n");
+    
+    struct timeval stop, start;
+    gettimeofday(&start, NULL);
+    
     int index =  0 ;
+   
     do
     {
         if(frame_ready)
@@ -481,7 +487,11 @@ int main(int argc, char *argv[])
 
         delay(DEF_VSYNC_DELAY);
     } while((!limit_frames) || (frames < max_frames));
-
+     
+     gettimeofday(&stop, NULL);
+     printf("took %lu ms\n", ((stop.tv_sec - start.tv_sec)
+        * 1000000 + stop.tv_usec - start.tv_usec)/1000); 
+    
     close(fd);
 
     return ret;
