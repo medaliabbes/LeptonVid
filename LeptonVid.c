@@ -35,7 +35,7 @@
 #define DEF_VSYNC_DELAY	    10
 #define DEF_SYNC_DELAY 	    5000
 #define DEF_FRAME_DELAY     65535
-#define DEF_SPEED 		    16000000
+#define DEF_SPEED 		    20000000
 #define DEF_PORT 		    "/dev/spidev0.0"
 #define DEF_GPIO_PIN        6
 
