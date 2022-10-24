@@ -54,6 +54,14 @@
 #define OPTIONS                 "D:s:p:f:F:?irw:"
 #define USAGE                   "[-f frames] [-F frames timeout] [-D startup delay] [-p port] [-s bitrate] [-i strip frame delimiters] [-r reset on startup] [-w gpio pin]"
 
+
+typedef struct {
+    long time ; 
+    int index ;
+} frame_index_t ;
+
+
+
 static char *device = DEF_PORT;
 static uint8_t mode = SPI_CPOL | SPI_CPHA;
 static uint8_t bits = 8;
@@ -107,17 +115,16 @@ static void push_frame()
     //fclose(f);
 }
 
-static void save_pgm_file(int image_index)
+static void save_pgm_file(frame_index_t fIndex)
 {
     int i;
     int j;
     unsigned int maxval = 0;
     unsigned int minval = UINT_MAX;
     char image_name[32];
-//    int image_index = 0;
 
     do {
-        sprintf(image_name, "./images/IMG_%.4d.pgm", image_index);
+        sprintf(image_name, "./images/IMG_%lu.pgm", fIndex.time , fIndex.index);
         image_index += 1;
         if (image_index > 9999) 
         {
@@ -337,6 +344,7 @@ void vsync_isr(void)
 #endif
 }
 
+
 int main(int argc, char *argv[])
 {
     int ret = 0;
@@ -465,8 +473,13 @@ int main(int argc, char *argv[])
     struct timeval stop, start;
     gettimeofday(&start, NULL);
     
-    int index =  0 ;
-   
+    //int index =  time(NULL) ;
+
+    frame_index_t FrameIndex ;
+
+    FrameIndex.index = 0 ; 
+    FrameIndex.time  = time(NULL) ;
+
     do
     {
         if(frame_ready)
@@ -476,13 +489,21 @@ int main(int argc, char *argv[])
             if(!strip_frame_delimiters)
                 printf("\nF\n");
              
-            save_pgm_file(index ) ;
+            save_pgm_file( &FrameIndex ) ;
            // push_frame();
 
             if(!strip_frame_delimiters)
                 printf("\nEF\n");
 
+            
             frames++;
+            FrameIndex.index++ ;
+
+            if(FrameIndex.index % 10 == 0 )
+            {
+                FrameIndex.index = 0 ;
+                FrameIndex.time = time(NULL) ;
+            }
         }
 
         delay(DEF_VSYNC_DELAY);
