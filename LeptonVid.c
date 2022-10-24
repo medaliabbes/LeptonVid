@@ -115,7 +115,7 @@ static void push_frame()
     //fclose(f);
 }
 
-static void save_pgm_file(frame_index_t fIndex)
+static void save_pgm_file(frame_index_t * fIndex)
 {
     int i;
     int j;
@@ -124,13 +124,13 @@ static void save_pgm_file(frame_index_t fIndex)
     char image_name[32];
 
     do {
-        sprintf(image_name, "./images/IMG_%lu.pgm", fIndex.time , fIndex.index);
-        image_index += 1;
+        sprintf(image_name, "./images/IMG_%lu_%d.pgm", fIndex->time , fIndex->index);
+        /*image_index += 1;
         if (image_index > 9999) 
         {
             image_index = 0;
             break;
-        }
+        }*/
 
     } while (access(image_name, F_OK) == 0);
 
