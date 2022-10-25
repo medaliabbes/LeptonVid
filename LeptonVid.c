@@ -54,6 +54,14 @@
 #define OPTIONS                 "D:s:p:f:F:?irw:"
 #define USAGE                   "[-f frames] [-F frames timeout] [-D startup delay] [-p port] [-s bitrate] [-i strip frame delimiters] [-r reset on startup] [-w gpio pin]"
 
+
+typedef struct {
+    long time ; 
+    int index ;
+} frame_index_t ;
+
+
+
 static char *device = DEF_PORT;
 static uint8_t mode = SPI_CPOL | SPI_CPHA;
 static uint8_t bits = 8;
@@ -69,61 +77,23 @@ static bool frame_ready = false;
 static int fd, opt;
 static int gpio_pin = DEF_GPIO_PIN;
 
-static void push_frame()
-{
-    int i,j;
-    unsigned int maxval = 0;
-    unsigned int minval = UINT_MAX;
 
-    for(i = 0; i < LEPTON_HEIGHT*2; i++)
-        for(j = 0; j < LEPTON_WIDTH/2; j++)
-        {
-            if (lepton_image[i][j] > maxval)
-                maxval = lepton_image[i][j];
-
-            if (lepton_image[i][j] < minval)
-                minval = lepton_image[i][j];
-         if(lepton_image[i][j] == 0)
-		printf("le Zero\r\n");
-        }
-    char * image_name = "images/im1.pgm" ;
-    //FILE *f = fopen(image_name, "w+"); //added
-    printf( "P2\n%d %d \n%u\n", LEPTON_WIDTH, LEPTON_HEIGHT, maxval-minval);
-
-    for(i = 0; i < LEPTON_HEIGHT*2; i += 2)
-    {
-        for(j = 0; j < LEPTON_WIDTH/2; j++)
-            printf("%d ", lepton_image[i][j] - minval);
-
-        for(j = 0; j < LEPTON_WIDTH/2; j++)
-            printf("%d ", lepton_image[i + 1][j] - minval);
-
-        printf("\n");
-    }
-
-    printf("\n\n");
-     
-	printf("image , max %d ,min %d\r\n",maxval,minval );
-    //fclose(f);
-}
-
-static void save_pgm_file(int image_index)
+static void save_pgm_file(frame_index_t * fIndex)
 {
     int i;
     int j;
     unsigned int maxval = 0;
     unsigned int minval = UINT_MAX;
     char image_name[32];
-//    int image_index = 0;
 
     do {
-        sprintf(image_name, "./images/IMG_%.4d.pgm", image_index);
-        image_index += 1;
+        sprintf(image_name, "./images/IMG_%lu_%d.pgm", fIndex->time , fIndex->index);
+        /*image_index += 1;
         if (image_index > 9999) 
         {
             image_index = 0;
             break;
-        }
+        }*/
 
     } while (access(image_name, F_OK) == 0);
 
@@ -151,19 +121,39 @@ static void save_pgm_file(int image_index)
   //  printf("maxval = %u\n",maxval);
 //    printf("minval = %u\n",minval);
     
-    fprintf(f,"P2\n160 120\n%u\n",maxval-minval);
+    fprintf(f,"P2\n160 120\n%u\n",255);
     for(i=0; i < 240; i += 2)
     {
         /* first 80 pixels in row */
         for(j = 0; j < 80; j++)
         {
-            fprintf(f,"%d ", lepton_image[i][j] - minval);
+	    if(lepton_image[i][j] - minval >255)
+	    {
+		fprintf(f,"255 ");
+	    }
+	    else if(lepton_image[i][j] - minval <0)
+	    {
+		fprintf(f , "0 ");
+	    }
+	    else{
+                fprintf(f,"%d ", lepton_image[i][j] - minval);
+	   }
         }
 
         /* second 80 pixels in row */
         for(j = 0; j < 80; j++)
         {
-            fprintf(f,"%d ", lepton_image[i + 1][j] - minval);
+	    if(lepton_image[i+1][j]- minval >255)
+            {
+              fprintf(f,"%d ", 255);
+	    }
+	    if(lepton_image[i+1][j]- minval <0)
+	    {
+	     fprintf(f,"%d " , 0);
+	    }
+	    else{
+		fprintf(f,"%d ",lepton_image[i+1][j] - minval) ;	
+	    }
         }        
         fprintf(f,"\n");
     }
@@ -337,6 +327,7 @@ void vsync_isr(void)
 #endif
 }
 
+
 int main(int argc, char *argv[])
 {
     int ret = 0;
@@ -465,24 +456,40 @@ int main(int argc, char *argv[])
     struct timeval stop, start;
     gettimeofday(&start, NULL);
     
-    int index =  0 ;
-   
+    //int index =  time(NULL) ;
+
+    frame_index_t FrameIndex ;
+
+    FrameIndex.index = 0 ; 
+    FrameIndex.time  = time(NULL) ;
+
     do
     {
         if(frame_ready)
         {
             frame_ready = false;
 
-            if(!strip_frame_delimiters)
-                printf("\nF\n");
+  //          if(!strip_frame_delimiters)
+//                printf("\nF\n");
              
-            save_pgm_file(index ) ;
+            save_pgm_file( &FrameIndex ) ;
            // push_frame();
 
-            if(!strip_frame_delimiters)
-                printf("\nEF\n");
+    //        if(!strip_frame_delimiters)
+      //          printf("\nEF\n");
 
+            
             frames++;
+            FrameIndex.index++ ;
+
+            if(FrameIndex.index % 100 == 0 )
+            {
+                char cmd[100] ;
+                sprintf(cmd , "python app.py %lu" ,  FrameIndex.time ) ;
+                FrameIndex.index = 0 ;
+                FrameIndex.time = time(NULL) ;
+                system(cmd) ;
+            }
         }
 
         delay(DEF_VSYNC_DELAY);
