@@ -20,6 +20,7 @@
 #include "leptonSDKEmb32PUB/LEPTON_AGC.h"
 #include "leptonSDKEmb32PUB/LEPTON_OEM.h"
 #include "leptonSDKEmb32PUB/LEPTON_ErrorCodes.h"
+#include "leptonSDKEmb32PUB/LEPTON_RAD.h"
 
 #define REBOOT_LEPTON
 //#define POWER_CYCLE_LEPTON
@@ -69,7 +70,10 @@ static uint32_t speed = DEF_SPEED;
 static uint16_t frame_delay = DEF_FRAME_DELAY;
 static uint8_t status_bits = 0;
 static uint8_t rx_buf[LEP_SPI_BUFFER] = {0};
-static unsigned int lepton_image[LEPTON_HEIGHT*2][LEPTON_WIDTH/2];
+
+static unsigned int lepton_image[LEPTON_HEIGHT*2][LEPTON_WIDTH/2] ;
+static float  lepton_temperature[LEPTON_HEIGHT*2][LEPTON_WIDTH/2] ;
+
 static uint8_t result[PACKET_SIZE*PACKETS_PER_FRAME];
 static uint16_t *frameBuffer;
 static int sync_delay = DEF_SYNC_DELAY;
@@ -81,14 +85,15 @@ static int gpio_pin = DEF_GPIO_PIN;
 static void save_pgm_file(frame_index_t * fIndex)
 {
     int i;
-    int j;
+     int j;
     unsigned int maxval = 0;
     unsigned int minval = UINT_MAX;
-    char image_name[32];
-
+    char image_name[40];
+    char temp_filename[40];
     do {
-        sprintf(image_name, "./images/IMG_%lu_%d.pgm", fIndex->time , fIndex->index);
-        /*image_index += 1;
+        sprintf(image_name, "./images/rawdata%lu_%d.pgm", fIndex->time , fIndex->index);
+        sprintf(temp_filename ,"./images/TEMP_%lu_%d.txt" ,fIndex->time ,fIndex->index);        
+/*image_index += 1;
         if (image_index > 9999) 
         {
             image_index = 0;
@@ -127,6 +132,7 @@ static void save_pgm_file(frame_index_t * fIndex)
         /* first 80 pixels in row */
         for(j = 0; j < 80; j++)
         {
+	    /* old processing	    
 	    if(lepton_image[i][j] - minval >255)
 	    {
 		fprintf(f,"255 ");
@@ -137,12 +143,14 @@ static void save_pgm_file(frame_index_t * fIndex)
 	    }
 	    else{
                 fprintf(f,"%d ", lepton_image[i][j] - minval);
-	   }
+	   }*/
+	   fprintf(f,"%d ",lepton_image[i][j] );
         }
 
         /* second 80 pixels in row */
         for(j = 0; j < 80; j++)
         {
+	    /* old processing
 	    if(lepton_image[i+1][j]- minval >255)
             {
               fprintf(f,"%d ", 255);
@@ -154,17 +162,64 @@ static void save_pgm_file(frame_index_t * fIndex)
 	    else{
 		fprintf(f,"%d ",lepton_image[i+1][j] - minval) ;	
 	    }
+	   */
+	   fprintf(f , "%d ",lepton_image[i+1][j]) ;
         }        
         fprintf(f,"\n");
     }
     fprintf(f,"\n\n");
 
     fclose(f);
+    
+    /******save temp file*******/
+    FILE *f_temp = fopen(temp_filename, "w+");
+    
+    if (f_temp == NULL)
+    {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+	
+	
+	for(i=0; i < 240; i += 2)
+    {
+        /* first 80 pixels in row */
+        for(j = 0; j < 80; j++)
+        {
+            fprintf(f_temp,"%.2f ", lepton_temperature[i][j] );
+        }
 
+        /* second 80 pixels in row */
+        for(j = 0; j < 80; j++)
+        {
+            fprintf(f_temp,"%.2f ", lepton_temperature[i + 1][j] );
+        }        
+        fprintf(f_temp,"\n");
+    }
+    fprintf(f_temp,"\n\n");
+
+    fclose(f_temp);
     //launch image viewer
     //execlp("gpicview", image_name, NULL);
 }
 
+void RGB_image()
+{
+	
+}
+
+void lepton_enable_radiometry()
+{
+//	LEP_CAMERA_PORT_DESC_T _port;
+	LEP_RAD_ENABLE_E rad_status;
+
+  //      if( LEP_GetRadEnableState(&_port, (LEP_RAD_ENABLE_E_PTR)&rad_status ) != LEP_OK )
+        {
+          // printf( "Cannot read Radiometry status\r\n");
+           //return LEP_ERROR;
+        }
+
+}
 
 static int get_frame(int fd)
 {
@@ -232,6 +287,9 @@ static int get_frame(int fd)
             lepton_image[pixel][(i - 4) / 2] = (rx_buf[packet + i] << 8 | rx_buf[packet + (i + 1)]);
 	   // if(lepton_image[pixel][(i-4)/2 ] == 0)
  		//printf("Zero\r\n");
+		lepton_temperature[pixel][(i-4)/2] = lepton_image[pixel][(i-4)/2] / 100.0;
+		lepton_temperature[pixel][(i-4)/2] -=273.15 ;
+//		printf("temp %f\r\n",lepton_temperature[pixel][(i-4)/2]) ;
         }
 
         if(packet_number == 59)
@@ -452,6 +510,8 @@ int main(int argc, char *argv[])
 		perror("Unable to setup wiringPi\n");
     else if (wiringPiISR(GPIO_PIN, INT_EDGE_BOTH, &vsync_isr) < 0)
 		perror("Unable to set ISR\n");
+
+    lepton_enable_radiometry() ;
     
     struct timeval stop, start;
     gettimeofday(&start, NULL);
