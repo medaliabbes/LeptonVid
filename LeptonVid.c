@@ -109,10 +109,10 @@ static void save_pgm_file(frame_index_t * fIndex)
      int j;
     unsigned int maxval = 0;
     unsigned int minval = UINT_MAX;
-    char image_name[40];
-    char temp_filename[40];
+    char image_name[55];
+    char temp_filename[55];
     do {
-        sprintf(image_name, "./images/IM_%s_%d.pgm", fIndex->timestampe , fIndex->index);
+        sprintf(image_name, "./images/IM_%s_%d.bmp", fIndex->timestampe , fIndex->index);
         sprintf(temp_filename ,"./images/TEMP_%s_%d.txt" ,fIndex->timestampe ,fIndex->index);        
     } while (access(image_name, F_OK) == 0);
 
@@ -151,26 +151,36 @@ static void save_pgm_file(frame_index_t * fIndex)
 	
 	int diff = maxval - minval ;
 	
-	float scale_factor = 255 / diff ;
+	float scale_factor = 255.0 / diff ;
 	int index ; 
+
+	int x = 0 ;
+	int y = 0 ;
 	
 	for(int i = 0 ; i < 240 ;i+=2)
 	{
 		for(int j = 0 ; j < 80 ; j++)
 		{
 			index  = (uint8_t ) (lepton_image[i][j] * scale_factor ) ;
-			bmp_pixel_init (&img.img_pixels[i][j], template[index][0],template[index][0],template[index][0]);
+			bmp_pixel_init (&img.img_pixels[y][x], template[index][0],template[index][0],template[index][0]);
+			x++ ;
 		}
 		for(int j = 0 ; j < 80 ; j++)
 		{
 			index  = (uint8_t ) (lepton_image[i+1][j] * scale_factor ) ;
-			bmp_pixel_init (&img.img_pixels[i+1][j], template[index][0],template[index][0],template[index][0]);
+			bmp_pixel_init (&img.img_pixels[y][x], template[index][0],template[index][0],template[index][0]);
+			x++ ;
 		}
+		if(x>=160)
+		{
+			x = 0 ;
+		}
+		y++;
 	}
 	
 	// save the image 
 	
-	bmp_img_write (&img, filename  );
+	bmp_img_write (&img, image_name  );
     
     /******save temp file*******/
     FILE *f_temp = fopen(temp_filename, "w+");
@@ -496,7 +506,7 @@ int main(int argc, char *argv[])
     else if (wiringPiISR(GPIO_PIN, INT_EDGE_BOTH, &vsync_isr) < 0)
 		perror("Unable to set ISR\n");
 
-    lepton_enable_radiometry() ;
+//    lepton_enable_radiometry() ;
     
     struct timeval stop, start;
     gettimeofday(&start, NULL);
