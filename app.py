@@ -12,7 +12,7 @@ bucket_name =  'oceanfriends-71bae.appspot.com' # Name of bucket
 #local_file  =  'file.txt' # Location of downloaded file on your PC
 
 # Set Credential
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= 'iamKey.json'
+#os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= 'iamKey.json'
 
 timeS = sys.argv[1]
 
