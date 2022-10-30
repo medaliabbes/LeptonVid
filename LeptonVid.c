@@ -99,7 +99,7 @@ void gettimestamp(char * str ,int max_len)
 
     ts = *localtime(&now);
 	
-    strftime(str, max_len, "%y-%m-%d_%H:%M", &ts);
+    strftime(str, max_len, "%y-%m-%d_%H_%M_%S", &ts);
 }
 
 
