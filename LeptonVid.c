@@ -168,7 +168,7 @@ static void save_pgm_file(frame_index_t * fIndex)
 		for(int j = 0 ; j < 80 ; j++)
 		{
 			index  = (uint8_t ) (lepton_image[i+1][j] * scale_factor ) ;
-			bmp_pixel_init (&img.img_pixels[y][x], template[index][0],template[index][2],template[index][2]);
+			bmp_pixel_init (&img.img_pixels[y][x], template[index][0],template[index][1],template[index][2]);
 			x++ ;
 		}
 		if(x>=160)
