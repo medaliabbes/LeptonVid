@@ -14,12 +14,17 @@
 #include <wiringPi.h>
 #include <sys/time.h>
 
+
+
 #include "leptonSDKEmb32PUB/LEPTON_SDK.h"
 #include "leptonSDKEmb32PUB/LEPTON_SYS.h"
 #include "leptonSDKEmb32PUB/LEPTON_Types.h"
 #include "leptonSDKEmb32PUB/LEPTON_AGC.h"
 #include "leptonSDKEmb32PUB/LEPTON_OEM.h"
 #include "leptonSDKEmb32PUB/LEPTON_ErrorCodes.h"
+#include "leptonSDKEmb32PUB/LEPTON_RAD.h"
+#include "palette.h"
+#include "libbmp.h"
 
 #define REBOOT_LEPTON
 //#define POWER_CYCLE_LEPTON
@@ -35,7 +40,7 @@
 #define DEF_VSYNC_DELAY	    10
 #define DEF_SYNC_DELAY 	    5000
 #define DEF_FRAME_DELAY     65535
-#define DEF_SPEED 		    20000000
+#define DEF_SPEED 		    16000000
 #define DEF_PORT 		    "/dev/spidev0.0"
 #define DEF_GPIO_PIN        6
 
@@ -54,6 +59,15 @@
 #define OPTIONS                 "D:s:p:f:F:?irw:"
 #define USAGE                   "[-f frames] [-F frames timeout] [-D startup delay] [-p port] [-s bitrate] [-i strip frame delimiters] [-r reset on startup] [-w gpio pin]"
 
+
+typedef struct {
+    //long time ; 
+    int index ;
+	char timestampe[25] ;
+} frame_index_t ;
+
+
+
 static char *device = DEF_PORT;
 static uint8_t mode = SPI_CPOL | SPI_CPHA;
 static uint8_t bits = 8;
@@ -61,70 +75,45 @@ static uint32_t speed = DEF_SPEED;
 static uint16_t frame_delay = DEF_FRAME_DELAY;
 static uint8_t status_bits = 0;
 static uint8_t rx_buf[LEP_SPI_BUFFER] = {0};
-static unsigned int lepton_image[LEPTON_HEIGHT*2][LEPTON_WIDTH/2];
+
+static unsigned int lepton_image[LEPTON_HEIGHT*2][LEPTON_WIDTH/2] ;
+static float  lepton_temperature[LEPTON_HEIGHT*2][LEPTON_WIDTH/2] ;
+
 static uint8_t result[PACKET_SIZE*PACKETS_PER_FRAME];
 static uint16_t *frameBuffer;
-static int sync_delay = DEF_SYNC_DELAY;
+static int  sync_delay = DEF_SYNC_DELAY;
 static bool frame_ready = false;
-static int fd, opt;
-static int gpio_pin = DEF_GPIO_PIN;
+static int  fd, opt;
+static int  gpio_pin = DEF_GPIO_PIN;
+bmp_img img;
 
-static void push_frame()
+
+
+void gettimestamp(char * str ,int max_len)
 {
-    int i,j;
-    unsigned int maxval = 0;
-    unsigned int minval = UINT_MAX;
+    time_t     now;
+	
+    struct tm  ts;
 
-    for(i = 0; i < LEPTON_HEIGHT*2; i++)
-        for(j = 0; j < LEPTON_WIDTH/2; j++)
-        {
-            if (lepton_image[i][j] > maxval)
-                maxval = lepton_image[i][j];
+    time(&now);
 
-            if (lepton_image[i][j] < minval)
-                minval = lepton_image[i][j];
-         if(lepton_image[i][j] == 0)
-		printf("le Zero\r\n");
-        }
-    char * image_name = "images/im1.pgm" ;
-    //FILE *f = fopen(image_name, "w+"); //added
-    printf( "P2\n%d %d \n%u\n", LEPTON_WIDTH, LEPTON_HEIGHT, maxval-minval);
-
-    for(i = 0; i < LEPTON_HEIGHT*2; i += 2)
-    {
-        for(j = 0; j < LEPTON_WIDTH/2; j++)
-            printf("%d ", lepton_image[i][j] - minval);
-
-        for(j = 0; j < LEPTON_WIDTH/2; j++)
-            printf("%d ", lepton_image[i + 1][j] - minval);
-
-        printf("\n");
-    }
-
-    printf("\n\n");
-     
-	printf("image , max %d ,min %d\r\n",maxval,minval );
-    //fclose(f);
+    ts = *localtime(&now);
+	
+    strftime(str, max_len, "%y-%m-%d_%H:%M", &ts);
 }
 
-static void save_pgm_file(int image_index)
+
+static void save_pgm_file(frame_index_t * fIndex)
 {
     int i;
-    int j;
+     int j;
     unsigned int maxval = 0;
     unsigned int minval = UINT_MAX;
-    char image_name[32];
-//    int image_index = 0;
-
+    char image_name[55];
+    char temp_filename[55];
     do {
-        sprintf(image_name, "./images/IMG_%.4d.pgm", image_index);
-        image_index += 1;
-        if (image_index > 9999) 
-        {
-            image_index = 0;
-            break;
-        }
-
+        sprintf(image_name, "./images/IM_%s_%d.bmp", fIndex->timestampe , fIndex->index);
+        sprintf(temp_filename ,"./images/TEMP_%s_%d.txt" ,fIndex->timestampe ,fIndex->index);        
     } while (access(image_name, F_OK) == 0);
 
     FILE *f = fopen(image_name, "w+");
@@ -137,7 +126,6 @@ static void save_pgm_file(int image_index)
     //printf("Calculating min/max values for proper scaling...\n");
     for(i = 0; i < 240; i++)
     {
-        
         for(j = 0; j < 80; j++)
         {
             if (lepton_image[i][j] > maxval) {
@@ -148,31 +136,82 @@ static void save_pgm_file(int image_index)
             }
         }
     }
-  //  printf("maxval = %u\n",maxval);
-//    printf("minval = %u\n",minval);
     
-    fprintf(f,"P2\n160 120\n%u\n",maxval-minval);
-    for(i=0; i < 240; i += 2)
+	// adjust 
+
+	for(i = 0; i < 240; i++)
+    {
+        for(j = 0; j < 80; j++)
+        {
+			lepton_image[i][j]  = lepton_image[i][j]  - minval  ;
+        }
+    }
+	
+	//scale the image 
+	
+	int diff = maxval - minval ;
+	
+	float scale_factor = 255.0 / diff ;
+	int index ; 
+
+	int x = 0 ;
+	int y = 0 ;
+	
+	for(int i = 0 ; i < 240 ;i+=2)
+	{
+		for(int j = 0 ; j < 80 ; j++)
+		{
+			index  = (uint8_t ) (lepton_image[i][j] * scale_factor ) ;
+			bmp_pixel_init (&img.img_pixels[y][x], template[index][0],template[index][0],template[index][0]);
+			x++ ;
+		}
+		for(int j = 0 ; j < 80 ; j++)
+		{
+			index  = (uint8_t ) (lepton_image[i+1][j] * scale_factor ) ;
+			bmp_pixel_init (&img.img_pixels[y][x], template[index][0],template[index][0],template[index][0]);
+			x++ ;
+		}
+		if(x>=160)
+		{
+			x = 0 ;
+		}
+		y++;
+	}
+	
+	// save the image 
+	
+	bmp_img_write (&img, image_name  );
+    
+    /******save temp file*******/
+    FILE *f_temp = fopen(temp_filename, "w+");
+    
+    if (f_temp == NULL)
+    {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+	
+	
+	for(i=0; i < 240; i += 2)
     {
         /* first 80 pixels in row */
         for(j = 0; j < 80; j++)
         {
-            fprintf(f,"%d ", lepton_image[i][j] - minval);
+            fprintf(f_temp,"%.2f ", lepton_temperature[i][j] );
         }
 
         /* second 80 pixels in row */
         for(j = 0; j < 80; j++)
         {
-            fprintf(f,"%d ", lepton_image[i + 1][j] - minval);
+            fprintf(f_temp,"%.2f ", lepton_temperature[i + 1][j] );
         }        
-        fprintf(f,"\n");
+        fprintf(f_temp,"\n");
     }
-    fprintf(f,"\n\n");
+	
+    fprintf(f_temp,"\n\n");
 
-    fclose(f);
-
-    //launch image viewer
-    //execlp("gpicview", image_name, NULL);
+    fclose(f_temp);
+    
 }
 
 
@@ -240,8 +279,10 @@ static int get_frame(int fd)
         {
             pixel = packet_number + ((current_segment - 1) * 60);
             lepton_image[pixel][(i - 4) / 2] = (rx_buf[packet + i] << 8 | rx_buf[packet + (i + 1)]);
-	   // if(lepton_image[pixel][(i-4)/2 ] == 0)
- 		//printf("Zero\r\n");
+		    
+			lepton_temperature[pixel][(i-4)/2] = lepton_image[pixel][(i-4)/2] / 100.0;
+			lepton_temperature[pixel][(i-4)/2] -=273.15 ;
+ 
         }
 
         if(packet_number == 59)
@@ -337,6 +378,7 @@ void vsync_isr(void)
 #endif
 }
 
+
 int main(int argc, char *argv[])
 {
     int ret = 0;
@@ -399,8 +441,10 @@ int main(int argc, char *argv[])
     }
  	
    // printf("start\r\n");
-
+	printf("Allocating Ram for image\r\n");
     sleep(startup_delay);
+	
+	bmp_img_init_df (&img,160, 120);
 
     if(reset_lepton)
         resetLepton();
@@ -461,28 +505,47 @@ int main(int argc, char *argv[])
 		perror("Unable to setup wiringPi\n");
     else if (wiringPiISR(GPIO_PIN, INT_EDGE_BOTH, &vsync_isr) < 0)
 		perror("Unable to set ISR\n");
+
+//    lepton_enable_radiometry() ;
     
     struct timeval stop, start;
     gettimeofday(&start, NULL);
     
-    int index =  0 ;
-   
+    //int index =  time(NULL) ;
+
+    frame_index_t FrameIndex ;
+
+    FrameIndex.index = 0 ; 
+	gettimestamp(FrameIndex.timestampe , 25) ;
+    //FrameIndex.time  = time(NULL) ;
+
     do
     {
         if(frame_ready)
         {
             frame_ready = false;
 
-            if(!strip_frame_delimiters)
-                printf("\nF\n");
+  //          if(!strip_frame_delimiters)
+//                printf("\nF\n");
              
-            save_pgm_file(index ) ;
+            save_pgm_file( &FrameIndex ) ;
            // push_frame();
 
-            if(!strip_frame_delimiters)
-                printf("\nEF\n");
+    //        if(!strip_frame_delimiters)
+      //          printf("\nEF\n");
 
+            
             frames++;
+            FrameIndex.index++ ;
+
+            if(FrameIndex.index >= 100 )
+            {
+                char cmd[100] ;
+                sprintf(cmd , "python app.py %s" ,  FrameIndex.timestampe ) ;
+                FrameIndex.index = 0 ;
+                gettimestamp(FrameIndex.timestampe , 25) ;
+                system(cmd) ;
+            }
         }
 
         delay(DEF_VSYNC_DELAY);
