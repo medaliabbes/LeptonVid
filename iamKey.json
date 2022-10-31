@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "oceanfriends-71bae",
+  "private_key_id": "4e3b78cdb5f471206435aae6acff2e9d240461fc",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDp90H+fc1aImHW\naTQ6DCzQI+gaoyWggskhnbKFghlOvM0ValKuKpuxVEpWu25/EtBsMRhq6vYnQgzQ\n5R/ED+9AMaa7x1FRVIMzvpdfzV1Xw25BqsZHoJXwg4VUa/2QXgH73V31jPkse3M8\n7LFq0/IJz5fwoX+LWCHotGl9MbYj0VrF9cFDFWQDWOF+aqGaLy3IqGla6fk5TGcm\nh6q52NWWuDnyGOOh6w5owhgCeIh4NcoPtCYFdnXSmVZHSufUfMs/ziiynud/kaGR\nTg6WbT41xM/hbclHPdDSmMTPPZjxHkNnpAtgekPQsROBdXocjGnSSMx7WRhQma40\nCepwATynAgMBAAECggEAZboDMLLkKY+PeJlPgvmuNmWWUpajEpIq/3nAmDoD5O9E\nQE51WpLeFREwLVvbZFb61j/WfQ5iLpmSVvV4hVfkT8YG19iG69TSIxp4WMhDEJjB\nhL3K7nPNHcEhpJ47ppypQihy5QQBhyy540CKt4cl0sw3JQIjIaQVQkfHIg8OQa29\nQJyA7QBjrjn0GDV6fp0jvH0qtiZQznyyMnI7CY/TXxqgsJmP4EarJGKiqkCzldHA\nozc4D2yCxQ8CNqOGLcqusjSleANH6BmgoJvqZNyUUL37aFOGweSZoRBPc5P1HV6A\nHo5XM0Mt2TQVI9SJ+mk+ovVHZd5QP1o02x167x1+aQKBgQD/53mbNrjxzx6WQj82\nljSCZ3xmHYITKRdRg8B1OKqpWLezXHDJPG3vBDuyeQOvtkKqf3a2dtWsD358+xby\nPX/DXVq8p0Wfx+myH4pyhFxsxDZjSBXJVW2CQSv86uzav0JVHBbmORScvOQ+v9Iz\nUfX8jrD+fzRX6R64fVCPxGEajQKBgQDqDa4mH+YHyqaRCh1J731pMpKXLVVLC6zF\nyyFuaU1SMP5BLk+iENYYwxDikZe5Y8IQ/dr+yKabqPIDkhnhXSjQiPLojFEYrr0x\nqd+c4967BokvZ+6iYZAX5O6avTaVjprPaFK0yQHm5X897Jx+zFr/PBnfS7xWjq67\noQ0xVqjhAwKBgGXs1WO79Qfi/gTNGA5u3zU9cK/feuqUyEPgXSyTSG4w9uIKpKWS\nWxsDLZ/VUWGQD5eHM0pTpKFmfnPbMnWDhzrSGQzg9vtADdWzeFpKW+G6eQssL/lD\n/F0QBiwzielKmmn5ySkjfRE8rxBLKLbmIzrXvqlvEvMc1+6VgxvwFNkVAoGBAKjP\nHR/aOeq8us45YU6GMQnCs//dbnsl/ILcM0yTHnV9aKRSZpUZV5Gcf30qTSglTz86\nGM1Sovf6LjNtGMV2j414eNpI+eS3gzVitClQIMD7wc4zQ+ZSP788Guv4NHpB1F5r\ne9twbrK+K7vaADVj5u3Xx0FKOpijaFtjmURQoJVJAoGADELXjU+XuNM5dh/EgnbM\nciYd6NzHu+DkyoVlU1XyitQt3B4rN7tYX4moJnY/PbM19YRawzmwZo+W1VcTyZTB\nQBYIU626ZnaJ4e2U3koZ6mbmT0l4bO/ilVtw180yEf/LbA+w3gRQC3ZHnUp1vJA1\nxDkInSWnNBy5KTL/trtaVOY=\n-----END PRIVATE KEY-----\n",
+  "client_email": "sleepdeviceaccount@oceanfriends-71bae.iam.gserviceaccount.com",
+  "client_id": "109889171659755682685",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sleepdeviceaccount%40oceanfriends-71bae.iam.gserviceaccount.com"
+}
