@@ -112,7 +112,7 @@ static void save_pgm_file(frame_index_t * fIndex)
     char image_name[55];
     char temp_filename[55];
     do {
-        sprintf(image_name, "./images/IM_%s_%d.bmp", fIndex->timestampe , fIndex->index);
+        sprintf(image_name, "./images/IM_%s_%.2d.bmp", fIndex->timestampe , fIndex->index);
         sprintf(temp_filename ,"./images/TEMP_%s_%d.txt" ,fIndex->timestampe ,fIndex->index);        
     } while (access(image_name, F_OK) == 0);
 

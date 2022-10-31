@@ -12,7 +12,7 @@ bucket_name =  'oceanfriends-71bae.appspot.com' # Name of bucket
 #local_file  =  'file.txt' # Location of downloaded file on your PC
 
 # Set Credential
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= 'iamKey.json'
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= '../iamKey.json'
 
 timeS = sys.argv[1]
 
@@ -29,7 +29,10 @@ for i in range(100) :
     bucket_file = 'thermalCamera/IM_' + timeS + '_'+str(i) +'.bmp'
     blob = bucket.blob(bucket_file)
 	#./images/IM_%s_%d.bmp
-    local_file = './images/IM_'  + timeS + '_'+str(i) +'.bmp'
+    if i>=10 :
+        local_file = './images/IM_'  + timeS + '_'+str(i) +'.bmp'
+    else :
+        local_file = './images/IM_'  + timeS + '_0'+str(i) + '.bmp'
     # Upload the file to a destination
     blob.upload_from_filename(local_file)
     print(local_file+" Uploaded" )
